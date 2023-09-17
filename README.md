@@ -1,3 +1,12 @@
+# API REST AZURE
+
+El script da la opción al usuario descargar página concreta,la otra opción es descargar todas las páginas de la wiki azure lo pasa en word primeramente. Luego por último usando la libreria pywin32 es capaz de formatear el documento en condiciones.
+
+main.py
+
+Se emcarga de descargar página concreta de la wiki azure o todas las páginas de la wiki azure api rest.
+
+
 # pywin32 word en python
 
 Al ser tan complejo el programa os lo voy subiendo o sea actualizar poco a poco,esto no es definitivo.
