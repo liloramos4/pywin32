@@ -21,3 +21,10 @@ Aquí se ven los codeblocks por ejemplo:
 Ahora os muestro como se ven las viñetas y sub-viñetas en word a diferencial del markdown:
 
 [viñetas y sub-viñetas en word ](https://ibb.co/qmpm1b3)
+
+
+Aquí se ven las imagenes en word:
+
+[imágenes en word convertidas del md](https://ibb.co/FxRxYgT)
+
+
