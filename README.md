@@ -4,7 +4,7 @@ El script da la opción al usuario descargar página concreta,la otra opción es
 
 main.py
 
-Se emcarga de descargar página concreta de la wiki azure o todas las páginas de la wiki azure api rest.
+Se encarga de descargar página concreta de la wiki azure o todas las páginas de la wiki azure api rest.
 
 
 # pywin32 word en python
