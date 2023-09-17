@@ -28,3 +28,6 @@ Aquí se ven las imagenes en word:
 [imágenes en word convertidas del md](https://ibb.co/FxRxYgT)
 
 
+Ahora os enseño las tablas en word:
+
+[tablas en word](https://ibb.co/F6jtxWf)
