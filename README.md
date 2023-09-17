@@ -31,3 +31,8 @@ Aquí se ven las imagenes en word:
 Ahora os enseño las tablas en word:
 
 [tablas en word](https://ibb.co/F6jtxWf)
+
+
+Hypervinculos enlaces funcionales en word, si pinchas al enlace (control+ botón derecho) te lleva a la página
+
+[hypervinculos y enlaces páginas en word](https://ibb.co/4PRVLVq)
