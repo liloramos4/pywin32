@@ -1,5 +1,8 @@
 # pywin32
 
+Al ser tan complejo el programa os lo voy subiendo o sea actualizar poco a poco,esto no es definitivo.
+
+
 Es una librería muy compleja con muchas instrucciones,se instala de esta manera:
 
 ```
