@@ -1,4 +1,4 @@
-# pywin32
+# pywin32 word en python
 
 Al ser tan complejo el programa os lo voy subiendo o sea actualizar poco a poco,esto no es definitivo.
 
