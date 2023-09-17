@@ -16,3 +16,8 @@ Se ve como se muestra los titulos, y por ejemplo las letras en cursiva:
 Aquí se ven los codeblocks por ejemplo:
 
 [codeblocks ejemplo de como se ve después de a ver ejecutado el script](https://ibb.co/8gHdtMq)
+
+
+Ahora os muestro como se ven las viñetas y sub-viñetas en word a diferencial del markdown:
+
+[viñetas y sub-viñetas en word ](https://ibb.co/qmpm1b3)
