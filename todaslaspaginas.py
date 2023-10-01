@@ -51,6 +51,20 @@ def extract_pages_recursive(page, level=1):
         return []
 
     content = get_page_content(page['url'])
+    # Replace <span> tags with plain text
+    content = re.sub(r'<span style="color:[^>]*>([^<]*)</span>', r'\1', content)
+    # Reemplazar <b><span style="color:blue">Note:</span></b> con 'Note:' de manera dinámica
+    content = re.sub(r'<b>([^<]*)</b>', r'\1', content, flags=re.IGNORECASE)
+    # Reemplazar <span style="color:(.*?)">(.*?)</span> con '(.*?)'
+    content = re.sub(r'<span style="color:(.*?)">(.*?)</span>', r'\2', content)
+    # Reemplazar <center>(.*?)</center> con '(.*?)'
+    content = re.sub(r'<center>(.*?)</center>', r'\1', content)
+    # Reemplazar <code>(.*?)</code> con '(.*?)'
+    content = re.sub(r'<code>(.*?)</code>', r'\1', content)
+    # Reemplazar <br>(.*?)</br> con '(.*?)'
+    content = re.sub(r'<br>(.*?)</br>', r'\1', content)
+    # Captura el color y el texto hasta la siguiente etiqueta o el final de la línea.
+    content = re.sub(r'<span style="color:(.*?)"\s*>(.*?)<', r'\2<', content)
 
     info = {
         'name': page['path'],
