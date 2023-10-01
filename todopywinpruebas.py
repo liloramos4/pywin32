@@ -5,6 +5,7 @@ import re
 import time
 import win32api
 
+
 print("Iniciando la aplicación de Word y abriendo el documento...")
 
 # Inicializar la aplicación de Word y abrir el documento
@@ -62,6 +63,69 @@ find_object.Replacement.Text = '^p'  # '^p' es el código para '¶'
 find_object.Execute(Replace=2)  # 2 = wdReplaceAll
 
 
+
+print("poniendo imagen local del pc")
+# Compilar la expresión regular para buscar imágenes en formato Markdown
+image_pattern = re.compile(r'!\[([^\]]*)\]\(([^)]+)\)')
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Comprobar si el directorio '.attachments' existe
+attachments_dir = os.path.join(script_dir, ".attachments")
+if not os.path.isdir(attachments_dir):
+    print(f"El directorio de imágenes no existe: {attachments_dir}")
+else:
+    print(f"El directorio .attachments existe: {attachments_dir}")
+
+    # Enumerando todos los archivos en el directorio .attachments
+    attachment_files = os.listdir(attachments_dir)
+    print(f"Archivos en .attachments: {attachment_files}")
+
+# Buscar y reemplazar imágenes en formato Markdown con imágenes incrustadas
+for paragraph in doc.Paragraphs:
+    match = image_pattern.search(paragraph.Range.Text)
+    if match:
+        description = match.group(1)
+        image_path_markdown = match.group(2)
+
+        # Ignorar enlaces externos
+        if image_path_markdown.startswith("http") or image_path_markdown.startswith("https"):
+            continue
+
+        # Extraer solo el nombre del archivo y la extensión del enlace de Markdown
+        file_name_ext = os.path.basename(image_path_markdown)
+
+        # Comprobar si el archivo se encuentra en la lista 'attachment_files'
+        if file_name_ext in attachment_files:
+            image_path = os.path.join(attachments_dir, file_name_ext)
+            print(f"Ruta de la imagen generada: {image_path}")
+
+            paragraph.Range.Delete()
+
+            image_paragraph = doc.Paragraphs.Add(paragraph.Range)
+            image_paragraph.Format.Style = doc.Styles.Item("Normal")
+
+            image_range = image_paragraph.Range
+            image_range.ParagraphFormat.Alignment = win32.constants.wdAlignParagraphCenter
+
+            if os.path.exists(image_path):
+                try:
+                    image = image_range.InlineShapes.AddPicture(FileName=image_path, LinkToFile=False, SaveWithDocument=True)
+                except Exception as e:
+                    print(f"Error al insertar la imagen: {e}")
+                    continue
+            else:
+                print(f"El archivo de imagen no se encuentra en la ruta especificada: {image_path}")
+                continue
+
+            max_height = 6 * 28.3465
+            if image.Height > max_height:
+                image.Height = max_height
+
+            if description:
+                desc_paragraph = doc.Paragraphs.Add(image_range)
+                desc_paragraph.Range.Text = f"\n{description}"
+                desc_paragraph.Format.Alignment = win32.constants.wdAlignParagraphCenter
 
 
 
@@ -231,11 +295,6 @@ for paragraph in doc.Paragraphs:
             desc_paragraph.Range.Text = f"\n{description}"
             desc_paragraph.Format.Alignment = win32.constants.wdAlignParagraphCenter
 
-# Insertar un salto de página antes del título "Imagen prueba"
-print("Insertando un salto de página antes del título 'Imagen prueba'...")
-for paragraph in doc.Paragraphs:
-        if "Imagen prueba" in paragraph.Range.Text:
-                paragraph.Range.InsertBefore('\f')  # '\f' es el código para un salto de página
 
 
 print("creando bloques de código para tu documento...")
@@ -646,6 +705,58 @@ for paragraph in doc.Paragraphs:
         # Establecer el color de la línea a gris claro
         border.Color = win32api.RGB(234, 234, 234)
 
+
+def apply_shading_to_text(container, pattern):
+    # Iterar sobre todos los elementos en el contenedor (párrafos o celdas)
+    for element in container:
+        # Buscar el patrón en el texto del elemento
+        matches = re.findall(pattern, element.Range.Text)
+        
+        # Si se encontraron coincidencias, procesar cada una
+        if matches:
+            for match in matches:
+                # Crear un rango para la coincidencia
+                start_pos = element.Range.Text.find('`' + match + '`')
+                end_pos = start_pos + len(match) + 2  # Se suma 2 para incluir los caracteres de acento grave
+                
+                # Crear un nuevo rango que solo incluye la palabra que coincide con el patrón
+                word_range = doc.Range(element.Range.Start + start_pos, element.Range.Start + end_pos)
+                
+                # Aplicar el sombreado gris al rango de la palabra
+                word_range.Shading.BackgroundPatternColor = win32.constants.wdColorGray15
+                
+                # Eliminar los caracteres de acento grave
+                word_range.Text = match
+
+# Definir el patrón de búsqueda
+pattern = '`(.*?)`'
+
+print("Aplicando sombreado gris a las palabras en los párrafos...")
+apply_shading_to_text(doc.Paragraphs, pattern)
+
+print("Aplicando sombreado gris a las palabras en las celdas de las tablas...")
+for table in doc.Tables:
+    apply_shading_to_text(table.Range.Cells, pattern)
+
+
+print("agregar enlaces especiales azure wiki DEV")
+# Patrón regex para identificar URLs
+url_pattern = re.compile(r'\b((http|https):\/\/)?[^\s()<>]+(?:\.[a-z]{2,})')
+
+# Iterar sobre todos los párrafos en el documento
+for paragraph in doc.Paragraphs:
+    # Buscar todas las URLs en el párrafo
+    for match in re.finditer(url_pattern, paragraph.Range.Text):
+        # Obtener la URL y su posición en el texto del párrafo
+        url = match.group()
+        start_pos = match.start()
+        end_pos = match.end()
+
+        # Crear un rango que solo incluye la URL
+        url_range = doc.Range(paragraph.Range.Start + start_pos, paragraph.Range.Start + end_pos)
+
+        # Añadir un hipervínculo a la URL
+        doc.Hyperlinks.Add(Anchor=url_range, Address=url)
         
 
 # Itera sobre todos los campos en el documento
@@ -676,6 +787,71 @@ for i in range(doc.Paragraphs.Count, 0, -1):
             if prev_paragraph.Range.Text.strip() == "":
                 prev_paragraph.Range.Delete()
 
+
+def apply_formatting(doc, text_list, color_code, color_name):
+    for para in doc.Paragraphs:
+        run_range = para.Range
+        run_text = run_range.Text
+        for text in text_list:
+            if text in run_text:
+                start_pos = run_text.find(text)
+                end_pos = start_pos + len(text)
+                specific_range = doc.Range(run_range.Start + start_pos, run_range.Start + end_pos)
+                specific_range.Font.Color = color_code
+                specific_range.Font.Bold = True
+                print(f"Text set to {color_name}: {text}")
+
+# Read the Markdown content
+with open('htmlymd.md', 'r', encoding='utf-8') as f:
+    markdown_content = f.read()
+
+# Define the HTML tag patterns
+blue_tag_pattern = r'<b><span style="color:blue">(.*?)</span></b>'
+red_tag_pattern = r'<b><span style="color:red">(.*?)</span></b>'
+dynamic_red_tag_pattern = r'<span style="color:red">\s+(.*?)(?:\s|$)'
+dynamic_green_tag_pattern = r'<span style="color:green">\s*(.*?)\s*(?=<)'
+
+# Find text inside the HTML tags
+blue_text_list = re.findall(blue_tag_pattern, markdown_content)
+red_text_list = re.findall(red_tag_pattern, markdown_content)
+dynamic_red_text_list = re.findall(dynamic_red_tag_pattern, markdown_content)
+dynamic_green_text_list = re.findall(dynamic_green_tag_pattern, markdown_content)
+
+# Apply formatting
+apply_formatting(doc, blue_text_list, 16711680, "Blue")
+apply_formatting(doc, red_text_list, 255, "Red")
+apply_formatting(doc, dynamic_red_text_list, 255, "Dynamic Red")
+apply_formatting(doc, dynamic_green_text_list, 65280, "Dynamic Green")
+
+
+print("Limpieza de párrafos...")
+
+# Comprobar si el documento tiene al menos 6 páginas
+if doc.ComputeStatistics(win32.constants.wdStatisticPages) >= 6:
+    # Obtener el rango de la sexta página
+    sixth_page_range = word_app.Selection.GoTo(What=win32.constants.wdGoToPage, Which=win32.constants.wdGoToAbsolute, Count=6)
+else:
+    print("El documento tiene menos de 6 páginas.")
+    sixth_page_range = None
+
+# Recorrer todos los párrafos del documento en orden inverso
+for i in range(doc.Paragraphs.Count, 0, -1):
+    paragraph = doc.Paragraphs.Item(i)
+    
+    # Comprobar si el párrafo está en las primeras 5 páginas
+    if sixth_page_range and paragraph.Range.Start < sixth_page_range.Start:
+        continue  # Si está en las primeras 5 páginas, ignorarlo
+    
+    # Comprobar si el párrafo es un salto de párrafo
+    if paragraph.Range.Text.strip() == "":
+        # Si el párrafo anterior también es un salto de párrafo, eliminarlo
+        if i > 1:  # Asegurarse de que no es el primer párrafo
+            prev_paragraph = doc.Paragraphs.Item(i - 1)
+            if prev_paragraph.Range.Text.strip() == "":
+                try:
+                    prev_paragraph.Range.Delete()
+                except Exception as e:
+                    print(f"No se pudo eliminar el párrafo: {e}")
 
 
 # Acceder a la tabla de contenido
