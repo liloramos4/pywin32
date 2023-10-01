@@ -28,11 +28,14 @@ def sanitize_placeholder(placeholder):
     return sanitized
 
 def update_toc(docx_file):
-    word = win32com.client.DispatchEx("Word.Application")
-    doc = word.Documents.Open(docx_file)
-    doc.TablesOfContents(1).Update()
-    doc.Close(SaveChanges=True)
-    word.Quit()
+    try:
+        word = win32com.client.DispatchEx("Word.Application")
+        doc = word.Documents.Open(docx_file)
+        doc.TablesOfContents(1).Update()
+        doc.Close(SaveChanges=True)
+        word.Quit()
+    except Exception as e:
+        print(f"An error occurred while updating the table of contents: {e}")
 
 def get_page_content(url, headers):
     content_url = url + "?api-version=7.0&includeContent=true"
@@ -51,12 +54,29 @@ def extract_pages_recursive(page, headers=None, level=1):
     if not page:
         return []
 
-    content = get_page_content(page['url'], headers)
+    original_content = get_page_content(page['url'])
+    content = get_page_content(page['url'])
+    # Replace <span> tags with plain text
+    content = re.sub(r'<span style="color:[^>]*>([^<]*)</span>', r'\1', content)
+    # Reemplazar <b><span style="color:blue">Note:</span></b> con 'Note:' de manera dinámica
+    content = re.sub(r'<b>([^<]*)</b>', r'\1', content, flags=re.IGNORECASE)
+    # Reemplazar <span style="color:(.*?)">(.*?)</span> con '(.*?)'
+    content = re.sub(r'<span style="color:(.*?)">(.*?)</span>', r'\2', content)
+    # Reemplazar <center>(.*?)</center> con '(.*?)'
+    content = re.sub(r'<center>(.*?)</center>', r'\1', content)
+    # Reemplazar <code>(.*?)</code> con '(.*?)'
+    content = re.sub(r'<code>(.*?)</code>', r'\1', content)
+    # Reemplazar <br>(.*?)</br> con '(.*?)'
+    content = re.sub(r'<br>(.*?)</br>', r'\1', content)
+    # Captura el color y el texto hasta la siguiente etiqueta o el final de la línea.
+    content = re.sub(r'<span style="color:(.*?)"\s*>(.*?)<', r'\2<', content)
+
 
     info = {
         'name': page['path'],
         'short_name': page['path'].split('/')[-1],
         'url': page['url'],
+        'original_content': content,
         'content': content,
         'level': level,
         'subpages': []
@@ -224,14 +244,13 @@ def create_context(page_info, placeholders):
             if placeholder.endswith('_content'):
                 # Eliminar espacios adicionales del contenido
                 content = re.sub(r'\s+', ' ', page['content'])
+                # Eliminar las dos almohadillas del contenido
+                content = content.replace('##', '')
                 context[placeholder] = page['content']
                 title_index += 1
             else:
                 context[placeholder] = page['name'].split('/')[-1]
     return context
-
-
-
 
 
 def add_titles_to_template(template_path, titles_info):
