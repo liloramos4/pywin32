@@ -1,3 +1,43 @@
+import os
+import sys
+import subprocess
+
+# Comprobar si la carpeta 'shell' ya existe
+if not os.path.exists('shell'):
+    # Si no existe, crear un entorno virtual llamado "shell"
+    subprocess.run([sys.executable, "-m", "venv", "shell"])
+
+    # Definir la ubicación del ejecutable de Python en el entorno virtual
+    venv_python = os.path.join("shell", "Scripts", "python")
+    if sys.platform == "linux":
+        venv_python = os.path.join("shell", "bin", "python")
+
+    # Actualizar pip en el entorno virtual
+    subprocess.run([venv_python, "-m", "pip", "install", "--upgrade", "pip"])
+
+    # Instalar las dependencias especificadas en el archivo requirements.txt
+    subprocess.run([venv_python, "-m", "pip", "install", "-r", "requirements.txt"])
+    
+    # Imprimir el mensaje antes de activar el entorno virtual
+    if 'VIRTUAL_ENV' not in os.environ:
+        print("Por favor, vuelva a ejecutar el script llamado programfinal.py")  # Avisar al usuario   
+
+
+# Activar el entorno virtual "shell" solo si no está activado
+if 'VIRTUAL_ENV' not in os.environ:
+    activate_script = os.path.join("shell", "Scripts", "activate")
+    if sys.platform == "linux":
+        activate_script = os.path.join("shell", "bin", "activate")
+
+    # En Windows, necesitas ejecutar el script de activación en una shell
+    if sys.platform == "win32":
+        command = f"{activate_script}"
+        subprocess.run(["cmd", "/k", command])
+    else:  # En Unix, puedes usar 'source'
+        command = f"source {activate_script}"
+        subprocess.run(["bash", "-c", command])
+
+
 import json
 import base64
 import win32com.client
@@ -7,8 +47,6 @@ import win32api
 import urllib.parse  # Importado para analizar la URL
 import requests
 import os
-import sys
-import subprocess
 from docxtpl import DocxTemplate
 from docx import Document
 from docx.text.paragraph import Paragraph
@@ -19,43 +57,38 @@ import docx
 import time
 from collections import OrderedDict
 
-# Crear un entorno virtual llamado "shell"
-subprocess.run([sys.executable, "-m", "venv", "shell"])
-
-# Definir la ubicación del ejecutable de Python en el entorno virtual
-venv_python = os.path.join("shell", "Scripts", "python")
-if sys.platform == "linux":
-    venv_python = os.path.join("shell", "bin", "python")
 
 
-# Actualizar pip en el entorno virtual
-subprocess.run([venv_python, "-m", "pip", "install", "--upgrade", "pip"])
-
-
-# Instalar las dependencias especificadas en el archivo requirements.txt
-subprocess.run([venv_python, "-m", "pip", "install", "-r", "requirements.txt"])
 
 # Pregunta al usuario si quiere descargar todas las páginas y subpáginas de la Wiki
 respuesta = input("¿Quieres descargar todas las páginas y subpáginas de la Wiki? (s/n): ")
 
 if respuesta.lower() == 's':
     def todaslaspaginas():
-        import requests
         import json
         import base64
+        import win32com.client
+        import win32com.client as win32
         import re
-        from docxtpl import DocxTemplate
+        import win32api
+        import urllib.parse  # Importado para analizar la URL
+        import requests
         import os
+        from docxtpl import DocxTemplate
         from docx import Document
         from docx.text.paragraph import Paragraph
         from docx.opc.constants import RELATIONSHIP_TYPE as RT
         from docx.oxml import parse_xml
         from docx.oxml.ns import nsmap
-        from collections import OrderedDict
         import docx
-        import win32com.client
         import time
+        from collections import OrderedDict
 
+
+
+        # Inicializa las variables globales
+        stored_wiki_url = None
+        stored_personal_access_token = None
 
         def sanitize_placeholder(placeholder):
             # Replace spaces and invalid characters with underscores
@@ -74,7 +107,6 @@ if respuesta.lower() == 's':
                 word.Quit()
             except Exception as e:
                 print(f"An error occurred while updating the table of contents: {e}")
-
 
 
         def get_page_content(url):
@@ -112,8 +144,6 @@ if respuesta.lower() == 's':
             # Reemplazar <Lista> @<lo que sea> con Lista @lo que sea
             content = re.sub(r'<Lista> @<([^>]+)>', r'Lista @\1', content)
             
-            
-
 
             info = {
                 'name': page['path'],
@@ -141,6 +171,8 @@ if respuesta.lower() == 's':
                 return match.groupdict()
             else:
                 return None
+
+
 
         def extract_placeholders(template_path):
             doc = Document(template_path)
@@ -204,18 +236,21 @@ if respuesta.lower() == 's':
             return context
 
 
-        wiki_url = input("Introduce la URL principal del portal Wiki de Azure: ")
-        url_values = extract_url_values(wiki_url)
 
-        if url_values is None:
-            print("La URL proporcionada no es válida.")
-            exit()
+        # Pedir la información al usuario una sola vez y almacenarla en variables globales
+        # Verificar si las credenciales ya se han almacenado
+        if stored_wiki_url is None or stored_personal_access_token is None:
+            wiki_url = input("Introduce la URL principal del portal Wiki de Azure: ")
+            personal_access_token = input("Introduce tu token de acceso personal: ")
+            # Aquí iría la lógica para verificar si las credenciales son válidas.
+            # Si son válidas, las almacenamos en las variables globales.
+            stored_wiki_url = wiki_url
+            stored_personal_access_token = personal_access_token
+        else:
+            # Usar las credenciales almacenadas
+            wiki_url = stored_wiki_url
+            personal_access_token = stored_personal_access_token
 
-        organization = url_values['organization']
-        project = url_values['project']
-        wiki = url_values['wiki']
-
-        personal_access_token = input("Introduce tu token de acceso personal: ")
 
         credentials = f":{personal_access_token}"
         encoded_credentials = base64.b64encode(credentials.encode('utf-8')).decode('utf-8')
@@ -225,6 +260,15 @@ if respuesta.lower() == 's':
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
+
+        # Extraer valores de la URL
+        url_values = extract_url_values(wiki_url)
+        if url_values is None:
+            print("La URL proporcionada no es válida.")
+            exit()
+        organization = url_values['organization']
+        project = url_values['project']
+        wiki = url_values['wiki']
 
         url = f"https://dev.azure.com/{organization}/{project}/_apis/wiki/wikis/{wiki}/pages?api-version=7.0&recursionLevel=full"
 
@@ -367,7 +411,61 @@ if respuesta.lower() == 's':
         # Call the function to update the table of contents in the generated document
         update_toc(docx_file)
 
+
+
         
+        # Analiza la URL para obtener la organización y el nombre del repositorio
+        parsed_url = urllib.parse.urlparse(wiki_url)
+        path_parts = parsed_url.path.split("/")
+        organization = path_parts[1]
+        project = path_parts[2].split("/")[0]
+        wiki = f"{project}.wiki"
+
+        # Imprime las variables para depuración
+        print(f"Organization: {organization}")
+        print(f"Project: {project}")
+        print(f"Wiki: {wiki}")
+
+        list_url = f"https://dev.azure.com/{organization}/{project}/_apis/git/repositories/{wiki}/items?scopePath=/.attachments&recursionLevel=full&api-version=5.0"
+
+        # Configura la autenticación
+        headers = {
+            'Authorization': f'Basic {base64.b64encode((":{}".format(personal_access_token)).encode()).decode()}'
+        }
+
+        # Crea la carpeta .attachments si no existe
+        if not os.path.exists('.attachments'):
+            os.makedirs('.attachments')
+
+        # Realiza la solicitud GET para obtener la lista de archivos
+        list_response = requests.get(list_url, headers=headers)
+
+        # Procesa la respuesta
+        if list_response.status_code == 200:
+            response_json = list_response.json()
+            if 'value' in response_json:
+                files = response_json['value']
+                for file in files:
+                    # Salta el elemento que representa la carpeta en sí
+                    if file.get('isFolder'):
+                        continue
+
+                    # Descarga cada archivo<
+                    download_url = f"https://dev.azure.com/{organization}/{project}/_apis/git/repositories/{wiki}/items?path={file['path']}&api-version=5.0"
+                    download_response = requests.get(download_url, headers=headers)
+                    if download_response.status_code == 200:
+                        file_name = os.path.basename(file['path'])
+                        with open(f'.attachments/{file_name}', 'wb') as f:
+                            f.write(download_response.content)
+                        print(f"Descargado con éxito")
+                    else:
+                        print(f"Error al descargar {file['path']}: {download_response.status_code}")
+            else:
+                print("La clave 'value' no está presente en la respuesta de la API.")
+        else:
+            print(f"Error al listar archivos: {list_response.status_code}")
+
+     
         pass
         
     todaslaspaginas()  # Llama a la función todaslaspaginas
@@ -390,7 +488,12 @@ else:
         import docx
         import win32com.client
         import time
+        import urllib.parse
 
+       
+        # Inicializa las variables globales
+        stored_wiki_url = None
+        stored_personal_access_token = None
 
         def sanitize_placeholder(placeholder):
             # Replace spaces and invalid characters with underscores
@@ -405,6 +508,7 @@ else:
             doc.TablesOfContents(1).Update()
             doc.Close(SaveChanges=True)
             word.Quit()
+
 
         def get_page_content(url, headers):
             content_url = url + "?api-version=7.0&includeContent=true"
@@ -472,6 +576,8 @@ else:
             else:
                 return None
 
+
+        
         def obtain_page(organization, project, wiki, page_id, headers):
             api_url = f"https://dev.azure.com/{organization}/{project}/_apis/wiki/wikis/{wiki}/pages/{page_id}?api-version=7.0&recursionLevel=full&includeContent=true"
             response = requests.get(api_url, headers=headers)
@@ -484,8 +590,9 @@ else:
 
             return None
 
-        def download_specific_page(headers, wiki_url):
-            url_values = extract_url_values(wiki_url)
+        
+        def download_specific_page(headers, wiki_url2):
+            url_values = extract_url_values(wiki_url2)
 
             if url_values is None:
                 print("La URL proporcionada no es válida.")
@@ -562,8 +669,22 @@ else:
             
             return page_info
 
-        wiki_url = input("Introduce la URL de la página que quieres buscar: ")
-        personal_access_token = input("Introduce tu token de acceso personal: ")
+        # Pedir la información al usuario una sola vez y almacenarla en variables globales
+        # Verificar si las credenciales ya se han almacenado
+        if stored_wiki_url is None or stored_personal_access_token is None or stored_wiki_url2 is None:
+            wiki_url2 = input("Introduce la URL de la página que quieres buscar: ")
+            personal_access_token = input("Introduce tu token de acceso personal: ")
+            print("Por favor usuario necesito que especifiques tu URL principal azure wiki para poder descargar los ficheros tanto fotos u otros ficheros")
+            wiki_url = input("Introduce la URL principal del portal Wiki de Azure: ")
+            # Aquí iría la lógica para verificar si las credenciales son válidas.
+            # Si son válidas, las almacenamos en las variables globales
+            stored_wiki_url = wiki_url
+            stored_personal_access_token = personal_access_token
+        else:
+            # Usar las credenciales almacenadas
+            wiki_url = stored_wiki_url
+            personal_access_token = stored_personal_access_token
+
         credentials = f":{personal_access_token}"
         encoded_credentials = base64.b64encode(credentials.encode('utf-8')).decode('utf-8')
         headers = {
@@ -571,7 +692,7 @@ else:
                 "Content-Type": "application/json",
                 "Accept": "application/json"
         }
-        page_info = download_specific_page(headers, wiki_url)
+        page_info = download_specific_page(headers, wiki_url2)
 
         def extract_placeholders(template_path):
             doc = Document(template_path)
@@ -736,80 +857,59 @@ else:
 
         document = Document('documento_generado.docx')
 
+        # Analiza la URL para obtener la organización y el nombre del repositorio
+        parsed_url = urllib.parse.urlparse(wiki_url)
+        path_parts = parsed_url.path.split("/")
+        organization = path_parts[1]
+        project = path_parts[2].split("/")[0]
+        wiki = f"{project}.wiki"
+
+        # Imprime las variables para depuración
+        print(f"Organization: {organization}")
+        print(f"Project: {project}")
+        print(f"Wiki: {wiki}")
+
+        list_url = f"https://dev.azure.com/{organization}/{project}/_apis/git/repositories/{wiki}/items?scopePath=/.attachments&recursionLevel=full&api-version=5.0"
+
+        # Configura la autenticación
+        headers = {
+            'Authorization': f'Basic {base64.b64encode((":{}".format(personal_access_token)).encode()).decode()}'
+        }
+
+        # Crea la carpeta .attachments si no existe
+        if not os.path.exists('.attachments'):
+            os.makedirs('.attachments')
+
+        # Realiza la solicitud GET para obtener la lista de archivos
+        list_response = requests.get(list_url, headers=headers)
+
+        # Procesa la respuesta
+        if list_response.status_code == 200:
+            response_json = list_response.json()
+            if 'value' in response_json:
+                files = response_json['value']
+                for file in files:
+                    # Salta el elemento que representa la carpeta en sí
+                    if file.get('isFolder'):
+                        continue
+
+                    # Descarga cada archivo<
+                    download_url = f"https://dev.azure.com/{organization}/{project}/_apis/git/repositories/{wiki}/items?path={file['path']}&api-version=5.0"
+                    download_response = requests.get(download_url, headers=headers)
+                    if download_response.status_code == 200:
+                        file_name = os.path.basename(file['path'])
+                        with open(f'.attachments/{file_name}', 'wb') as f:
+                            f.write(download_response.content)
+                        print(f"Descargado con éxito")
+                    else:
+                        print(f"Error al descargar {file['path']}: {download_response.status_code}")
+            else:
+                print("La clave 'value' no está presente en la respuesta de la API.")
+        else:
+            print(f"Error al listar archivos: {list_response.status_code}")
+
 
     paginaconcreta2()  # Llama a la función paginaconcreta2
-
-
-print("Se le solicita al usuario estos datos para acceder git azure,ficheros adjuntos.Pon los datos bien aunque no tengas datos adjuntos para que el programa siga su curso hasta finalizar.")
-
-# Solicita al usuario el token de acceso y la URL de la wiki
-wiki_url = input("Introduzca otra vez la URL principal de la wiki de Azure: ")
-personal_access_token = input("Introduzca su token de acceso personal: ")
-
-
-try:
-
-   # Analiza la URL para obtener la organización y el nombre del repositorio
-   parsed_url = urllib.parse.urlparse(wiki_url)
-   path_parts = parsed_url.path.split("/")
-   organization = path_parts[1]
-   repository = path_parts[3]
-except IndexError:
-   print("Por favor Usuario, asegúrese de introducir correctamente la URL y el Token de Acceso.")
-   exit()
-
-
-# URL de la API de Git para tu proyecto y wiki
-list_url = "https://dev.azure.com/ivosanchez0159/Prueba/_apis/git/repositories/Prueba.wiki/items?scopePath=/.attachments&recursionLevel=full&api-version=5.0"
-
-# Configura la autenticación
-headers = {
-    'Authorization': f'Basic {base64.b64encode((":{}".format(personal_access_token)).encode()).decode()}'
-}
-
-# Crea la carpeta .attachments si no existe
-if not os.path.exists('.attachments'):
-    os.makedirs('.attachments')
-
-# Realiza la solicitud GET para obtener la lista de archivos
-list_response = requests.get(list_url, headers=headers)
-
-# Verifica si el estado de la respuesta es 203 (autenticación fallida)
-if list_response.status_code == 203:
-    print("Por favor Usuario, asegúrese de introducir correctamente el Token de Acceso o URL.")
-    exit()
-
-# Procesa la respuesta
-if list_response.status_code == 200:
-    response_json = list_response.json()
-    if 'value' in response_json:
-        files = response_json['value']
-        for file in files:
-            # Salta el elemento que representa la carpeta en sí
-            if file.get('isFolder'):
-                continue
-
-            # Descarga cada archivo
-            download_url = f"https://dev.azure.com/ivosanchez0159/Prueba/_apis/git/repositories/Prueba.wiki/items?path={file['path']}&api-version=5.0"
-            download_response = requests.get(download_url, headers=headers)
-            
-            if download_response.status_code == 200:
-                file_name = os.path.basename(file['path'])
-                with open(f'.attachments/{file_name}', 'wb') as f:
-                    f.write(download_response.content)
-                print(f"Descargado con éxito: {file_name}")
-            else:
-                print(f"Error al descargar {file['path']}: {download_response.status_code}")
-    else:
-        print("La clave 'value' no está presente en la respuesta de la API.")
-else:
-    print(f"Error al listar archivos: {list_response.status_code}")
-
-# Listar los nombres de los archivos en el directorio .attachments
-print("Archivos en el directorio .attachments:")
-for filename in os.listdir('.attachments'):
-    print(filename)
-
 
 
 print("Iniciando la aplicación de Word y abriendo el documento...")
@@ -862,7 +962,6 @@ find_object.Text = '^l'  # '^l' es el código para '↵'
 find_object.Replacement.ClearFormatting()
 find_object.Replacement.Text = '^p'  # '^p' es el código para '¶'
 find_object.Execute(Replace=2)  # 2 = wdReplaceAll
-
 
 
 
@@ -1104,7 +1203,6 @@ except Exception as e:
     print(f"Excepción capturada en el párrafo: {paragraph.Range.Text}")
     print(f"Detalles de la excepción: {e}")
            
-
 
 # Compilar la expresión regular para buscar imágenes en formato Markdown con URL completa
 image_pattern = re.compile(r'!\[([^\]]*)\]\((http[s]?://[^)]+)\)')
