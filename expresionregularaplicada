@@ -1,0 +1,32 @@
+import re
+
+def modify_regex_pattern(pattern, replacement):
+    # Modifica la expresión regular y el string de reemplazo,
+    # reemplazando \\ con \, pero maneja adecuadamente las funciones lambda
+    modified_pattern = pattern.replace('\\\\', '\\')
+    if isinstance(replacement, str):
+        modified_replacement = replacement.replace('\\\\', '\\')
+    else:
+        # Para funciones lambda, el reemplazo no se modifica
+        modified_replacement = replacement
+    return modified_pattern, modified_replacement
+
+
+# Tu contenido original
+content = "(b)(a color:blue)development/DevOps tools(/b) (/span)| ejemplo1 |ejemplo2  |ejemplo 3  |ejemplo4  |ejemplo5  |"
+
+# Lista de expresiones regulares y sus correspondientes reemplazos
+regex_replacements = [
+    (r'\(/b\)\s*\(/span\)\|', '(/b)|'),
+    (r'\(/b\)\|', r'(/b) \\n\\n|'),
+    
+]
+
+# Aplica cada expresión regular modificada
+for pattern, replacement in regex_replacements:
+    modified_pattern, modified_replacement = modify_regex_pattern(pattern, replacement)
+    content = re.sub(modified_pattern, modified_replacement, content)
+
+print(content)
+
+
