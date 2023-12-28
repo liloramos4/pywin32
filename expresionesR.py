@@ -13,7 +13,7 @@ def modify_regex_pattern(pattern, replacement):
 
 
 # Tu contenido original
-content = "(b)(a color:blue)development/DevOps tools(/b) | ejemplo1 |ejemplo2  |ejemplo 3  |ejemplo4  |ejemplo5  |"
+content = "(b)(a color:blue)development/DevOps tools(/b) (/span)| ejemplo1 |ejemplo2  |ejemplo 3  |ejemplo4  |ejemplo5  |"
 
 # Lista de expresiones regulares y sus correspondientes reemplazos
 regex_replacements = [
