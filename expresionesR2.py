@@ -14,7 +14,7 @@ content = """# Ejemplos de viñetas y sub-viñetas
 
 | ejemplo1 |ejemplo2  |ejemplo 3  |ejemplo4  |ejemplo5  |
 |--|--|--|--|--|
-|<b><span style="color:blue"> NOTE: </span></b>  |<span style="color:rosa"> marrón  | <span style="color:marrón"> marrón |<span style="color:yellow"> sin etiqueta  | <span style="color:green"> sin etiqueta |
+|<b><span style="color:blue"> NOTE: </span></b> |<span style="color:rosa"> marrón  | <span style="color:marrón"> marrón |<span style="color:yellow"> sin etiqueta  | <span style="color:green"> sin etiqueta |
 |<span style="color:violeta">violeta coche  |<span style="color:azul">violeta coche  |<span style="color:verde"> OUT of Scope  | <span style="color:red"> OUT of Scope |jaja  |
 |<span style="color:violeta">violeta coche  |<span style="color:Teal">coche teal  |<span style="color:green"> sin etiqueta   |<span style="color:Teal">sin etiqueta| Olé |
 | Hola | <span style="color:azul"> azul coche | <span style="color:teal">teal coche | Vale | ajjaja |
@@ -51,7 +51,8 @@ content = re.sub(r'(\(span style="color:[^)]+\)[^|]*?)\s*\|', r'\1 (/span)|', co
 content = re.sub(r'\|\(/span\)', '|', content)
 content = re.sub(r'(\(/span\))(\s*\(/span\)\s*\|)', r'\1|', content) 
 content = re.sub(r'\(/b\)\s*\(/span\)\|', '(/b)|', content)
-content = re.sub(r'\(/b\)\|', '(/b) \n\n|', content)
-content = re.sub(r'\(/b\)\s*\(/span\)\s*\|', '(/b) |', content)  
+content = re.sub(r'\(/b\)\s*\(/span\)\s*\|', '(/b) |', content)
+content = re.sub(r'\s+\(/span\)\|', '|', content)
+content, count = re.subn(r'([^\n]+)\|(?=\s+[\w\s]+\|)', r'\1\n\n|', content, count=1) 
 
 print("\nContenido final:\n", content)
