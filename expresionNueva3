@@ -1,0 +1,14 @@
+import re
+
+# Tu contenido original con cadenas multilínea
+content = """# Ejemplo tablas html y css
+<TABLE style="border-collapse: collapse;border-spacing: 0px;margin: 1rem 0px 0px;padding: 0px;border: 0px;width: 860px;table-layout: auto;font-size: 0.875rem;color: rgb(23, 23, 23);font-family: &amp;quot"><THEAD><TR><TH style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">Element</TH><TH style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">Description</TH></TR></THEAD>
+"""
+
+# aplica la expresión regular
+content = re.sub(r'<([^>]*)>', r'(\1)', content)
+
+# Aplica la transformación en una sola línea
+content = re.sub(r'\(TR\).*?\(TH.*?\)(.*?)\(/TH\).*?\(TH.*?\)(.*?)\(/TH\).*?\(/TR\)', r'| \1 | \2 |\n|--|--|', re.search(r'\(THEAD\)(.*?)\(/THEAD\)', content, re.DOTALL | re.IGNORECASE).group(1), flags=re.DOTALL | re.IGNORECASE)
+
+print(content)
