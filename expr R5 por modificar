@@ -1,0 +1,34 @@
+import re
+
+# Tu contenido original con las transformaciones aplicadas hasta ahora
+content = """
+<DIV style="color: rgb(0, 0, 0);font-family: &amp;quot;font-size: 14px;font-style: normal;font-weight: 400;letter-spacing: normal;text-align: start;text-indent: 0px;text-transform: none;white-space: normal;word-spacing: 0px"><TABLE style="border-collapse: collapse;border-spacing: 0px;margin: 1rem 0px 0px;padding: 0px;border: 0px;width: 860px;table-layout: auto;font-size: 0.875rem;color: rgb(23, 23, 23);font-family: &amp;quot"><THEAD><TR><TH style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">Element</TH><TH style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">Description</TH></TR></THEAD><TBODY><TR><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left"><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em">GET</CODE></TD><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">The HTTP verb, indicating you want to retrieve data from the endpoint. In this case, an OAuth access token.</TD></TR><TR><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left"><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em">http://[Log in to view URL] style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">The managed identities for Azure resources endpoint for the Instance Metadata Service.</TD></TR><TR><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left"><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em">api-version</CODE></TD><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">A query string parameter, indicating the API version for the IMDS endpoint. Use API version<SPAN> </SPAN><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em">2018-02-01</CODE><SPAN> </SPAN>or greater.</TD></TR><TR><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left"><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em">resource</CODE></TD><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">A query string parameter, indicating the App ID URI of the target resource. It also appears in the<SPAN> </SPAN><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em">aud</CODE><SPAN> </SPAN>(audience) claim of the issued token. This example requests a token to access Azure Resource Manager, which has an App ID URI of<SPAN> </SPAN><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em">https://[Log in to view URL] style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left"><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em">Metadata</CODE></TD><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">An HTTP request header field required by managed identities. This information is used as a mitigation against server side request forgery (SSRF) attacks. This value must be set to "true", in all lower case.</TD></TR><TR><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left"><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em"><SPAN style="background-color: rgb(255, 255, 0)">object_id</SPAN></CODE></TD><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">(Optional) A query string parameter, indicating the object_id of the managed identity you would like the token for. Required, if your VM has multiple user-assigned managed identities.</TD></TR><TR><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left"><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em"><SPAN style="background-color: rgb(255, 255, 0)">client_id</SPAN></CODE></TD><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">(Optional) A query string parameter, indicating the client_id of the managed identity you would like the token for. Required, if your VM has multiple user-assigned managed identities.</TD></TR><TR><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left"><CODE style="font-family: SFMono-Regular, Consolas, &amp;quot;font-size: 11.9px;padding: 0.1em 0.2em">msi_res_id</CODE></TD><TD style="padding: 0.5rem;vertical-align: top;line-height: 1.5;text-align: left">(Optional) A query string parameter, indicating the msi_res_id (Azure Resource ID) of the managed identity you would like the token for. Required, if your VM has multiple user-assigned managed identities.</TD></TR></TBODY></TABLE></DIV>
+"""
+
+# Convertir etiquetas HTML a paréntesis
+content = re.sub(r'<([^>]*)>', r'(\1)', content)
+
+# Formatear encabezados de tabla y eliminar (/THEAD)
+content = re.sub(r'\(TR\).*?\(TH.*?\)(.*?)\(/TH\).*?\(TH.*?\)(.*?)\(/TH\).*?\(/TR\).*?\(/THEAD\)', r'| \1 | \2 |\n|--|--|\n', content)
+
+# Formatear celdas de tabla
+content = re.sub(r'\(TR\).*?\(TD.*?\)(.*?)\(/TD\).*?\(TD.*?\)(.*?)\(/TD\).*?\(/TR\)', r'| \1 | \2 |\n', content)
+
+# Eliminar elementos adicionales
+content = re.sub(r'\(DIV\)|\(TABLE\)|\(THEAD\)|\(TBODY\)|\(TR\)', '', content)
+
+# Traducir (CODE) y (/CODE) a ` para el formato de código en Markdown
+content = re.sub(r'\(CODE\)(.*?)\(/CODE\)', r'`\1`', content)
+
+# todo hecho lo pone color amarillo es la intención.
+content = re.sub(r'<TR><TD.*?><CODE.*?><SPAN.*?>(.*?)</SPAN></CODE></TD>', r'| ``\1`` |', content)
+
+# Eliminar caracteres innecesarios
+content = re.sub(r'style=".*?"', '', content)
+
+# elimina (DIV )(TABLE )
+content = re.sub(r'\(DIV\s*\)|\(TABLE\s*\)', '', content)
+
+content = re.sub(r'\(/TBODY\)|\(/TABLE\)|\(/DIV\)', '', content)
+
+print(content)
