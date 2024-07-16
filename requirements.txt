@@ -5,3 +5,4 @@ markdown==3.4.3
 python-docx==0.8.11
 lxml==4.9.2
 pywin32==306
+setuptools>=70.0.0 # not directly required, pinned by Snyk to avoid a vulnerability
